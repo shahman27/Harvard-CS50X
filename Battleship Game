@@ -1,0 +1,801 @@
+from random import randint
+import string
+import sys
+from termcolor import colored, cprint
+import replit
+import time
+
+# These are dictionaries and lists that will be used later in the program. If the list/dictionary is empty, it will be filled.
+gamemodes = {'singleplayer': 1, 'Singleplayer': 1, 'multiplayer': 2, 'Multiplayer': 2}
+
+board = []
+
+player_board = []
+
+ai_board = []
+
+boards = {"1": 5, "2": 10, "3": 15}
+
+difficultyLevels = {"easy": 12, "Easy": 12, "medium": 8, "Medium": 8, "hard": 5, "Hard": 5, "impossible": 1, "Impossible": 1}
+
+numOfShips = [1, 3, 5]
+
+player_row_coordinates = {}
+
+player_col_coordinates = {}
+
+rowCoordinates = {}
+
+colCoordinates = {}
+
+ai_row = {}
+
+ai_col = {}
+
+# These are dictionaries for the coordinates of the ship.
+lowercaseGuessIndex = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4, 'f': 5, 'g': 6, 'h': 7, 'i': 8, 'j': 9, 'k': 10, 'l': 11, 'm': 12, 'n': 13, 'o': 14}
+
+uppercaseGuessIndex= {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9, 'K': 10, 'L': 11, 'M': 12, 'N': 13, 'O': 14}
+
+lowercaseIndex = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h', 8: 'i', 9: 'j', 10: 'k', 11: 'l', 12: 'm', 13: 'n', 14: 'o'}
+
+uppercaseIndex = {0: 'A', 1: 'B', 2: 'C', 3: 'D', 4: 'E', 5: 'F', 6: 'G', 7: 'H', 8: 'I', 9: 'J', 10: 'K', 11: 'L', 12: 'M', 13: 'N', 14: 'O'}
+
+boardList = []
+
+ltrDisplay = []
+
+ifShipHasSunk = {}
+
+ifShipHasSunkPlayer = {}
+
+ifShipHasSunkAi = {}
+
+numOfHits = 0
+
+boardSize = 0
+
+# These variables will hold all the lowercase and uppercase letters respectively.
+ascii_lowercase = string.ascii_lowercase
+ascii_uppercase = string.ascii_uppercase
+
+# These are triggers for the game modes.
+singleplayer = False
+multiplayer = False
+
+# These are letters with different colours.
+redX = colored('X', 'red')
+cyanO = colored('O', 'cyan', attrs = ['bold']) 
+player_ship = colored('O', 'yellow', attrs = ['bold'])
+hit_ship = colored('S', 'white', attrs = ['bold'])
+
+# This is a function designed used when the user inputs invalid inputs.
+def invalidInput (validInput):
+    if validInput == False:
+        print "\n", colored('Invalid Input', 'red'), "\n"
+        validInput = True
+        return 
+
+print "WELCOME TO BATTLESHIP!\n\n\n"
+
+# The user will choose the gamemode they want to play.
+gamemode = raw_input("Gamemodes:\n\nSingleplayer\nMultiplayer(Player vs. Ai)\n\nPick Gamemode(Singleplayer, Multiplayer): ")
+
+# This will look through the different game modes in the dictionary 'gamemodes', and will match the chosen game mode by the user to the keys in the dictionaty.
+for i in gamemodes.keys():
+    if i == gamemode:
+        if gamemodes[i] == 1:
+            singleplayer = True
+        elif gamemodes[i] == 2:
+            multiplayer = True
+    elif i not in gamemodes.keys():
+        validInput = False
+        invalidInput(validInput)
+        time.sleep(1)
+        replit.clear()
+
+# This is a while loop that will run only if the user chooses the singleplayer game mode.
+while singleplayer == True:
+    
+    validInput = True
+
+    # This will ask the user for their choice of board size.
+    boardChoice = raw_input("Boards: \n\nBoard 1: 5x5 \nBoard 2: 10x10 \nBoard 3: 15x15 \n\nPick Board(1, 2, 3): ")
+    
+    # This will check if the user inputted a valid input for 'boardChoice'.
+    for i in boards.keys():
+        if boardChoice == i:
+            count = 1
+            boardSize = boards[i]
+            for x in range(boards[i]):
+                board.append([cyanO] * boards[i])
+                ltrDisplay.append(colored(ascii_uppercase[x], 'green'))
+                boardList.append(count)
+                count += 1
+        elif boardChoice not in boards.keys():
+            validInput = False
+            invalidInput(validInput)
+            break
+    
+    # If the input is invalid, it will continue to the beginning of the loop.
+    if validInput == False:
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        time.sleep(1)
+        replit.clear()
+        continue
+
+    # This will ask the user for their difficulty choice.
+    difficulty = raw_input("\n\nDifficulty Levels: \n\nEasy: 12 Guesses\nMedium: 8 Guesses\nHard: 5 Guesses\nImpossible: 1 Guess\n\nPick Difficulty(Easy, Medium, Hard, Impossible): ")
+
+    # This will check if the user inputted a valid input for 'difficulty'.
+    for i in difficultyLevels.keys():
+        if difficulty == i:
+            turns = difficultyLevels[i]
+            break
+        elif difficulty not in difficultyLevels.keys():
+            validInput = False
+            invalidInput(validInput)    
+            break
+    
+    # If the input is invalid, it will continue to the beginning of the loop.
+    if validInput == False:
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        time.sleep(1)
+        replit.clear()
+        continue
+
+    # This will ask the user for number of ships.
+    shipChoice = int(raw_input("\n\nNumber of Ships:\n\n1 Ship\n3 Ships\n5 Ships\n\nChoose Number of Ships(1, 3, 5): "))
+    
+    # This will check if the user inputted a valid input for the variable 'shipChoice'
+    for i in numOfShips:
+        if shipChoice == i:
+            numberShips = i
+            for x in range(1, i + 1):
+                ifShipHasSunk[x] = False
+        elif shipChoice not in numOfShips:
+            validInput = False
+            invalidInput(validInput)
+            break
+    
+    # If the input is invalid, it will continue to the beginning of the loop.
+    if validInput == False:
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        time.sleep(1)
+        replit.clear()
+        continue
+
+    # This funtion will print the board based on the size that the user chose.
+    def print_board(board, ltrDisplay):
+        print "\n"
+        print "   ", "  ".join(ltrDisplay), "\n"
+        counter = 0
+        for row in board:
+            print colored(ascii_lowercase[counter], 'green'), " ", "  ".join(row), "\n"
+            counter += 1
+
+    print_board(board, ltrDisplay)
+
+    # This will loop through and will choose row values for the ships.
+    for i in numOfShips:
+        if i == numberShips: 
+            counter1 = 1
+            x = 0
+            while(x < numberShips):
+                r  = randint(0, boardSize - 1)
+                if r not in rowCoordinates.values():
+                    rowCoordinates[counter1] = r
+                    counter1 += 1
+                    x += 1
+
+    # This will loop through and will choose column values for the ships.
+    for i in numOfShips:
+        if i == numberShips: 
+            counter2 = 1
+            x = 0
+            while (x < numberShips):
+                r = randint(0, boardSize - 1)
+                if r not in colCoordinates.values():
+                    colCoordinates[counter2] = r
+                    counter2 += 1
+                    x += 1
+    
+    # This is for the developer only! This will print the row coordinates of the ships. It is sometimes out of order, however, it is not meant for the actual game.
+    for i in lowercaseIndex.keys():
+        for x in rowCoordinates.keys():
+            if rowCoordinates[x] == i:
+                print "\n", x,':', lowercaseIndex[i]
+    # This is for the developer only! This will print the column coordinates of the ships. It is sometimes out of order, however, it is not meant for the actual game.
+    for i in uppercaseIndex.keys():     
+        for x in colCoordinates.keys():
+            if colCoordinates[x] == i:
+                print '\n',x,':', uppercaseIndex[i]
+
+    endGame = False
+    exitWhile = False
+
+    counter5 = 1
+    counter6 = 1
+
+    # This whole loop will run for the amount of turns the user chose.
+    for turn in range(turns):
+        
+        # If all the ships have been sunken, it will break the loop.
+        if all(value == True for value in ifShipHasSunk.values()):
+            print "Congratulations, you have sunken all my ships!"
+            exitWhile = True
+            break
+        
+        turnOver = False                
+        validInput = True
+        # This will ask the user to input coordinates.
+        print "\n", "Turn", turn + 1, "\n"
+        guess_coordinates = raw_input("Guess Coordinates x, X: ")
+        # This will split the coordinates into different values in a list.
+        coordinates = guess_coordinates.split(", ")
+
+        # This will look at the first value in the 'coordinates' list and will check if the input is valid.
+        for i in lowercaseGuessIndex.keys():
+            if coordinates[0] == i:
+                guess_row = lowercaseGuessIndex[i]
+            elif coordinates[0] not in lowercaseGuessIndex.keys():
+                validInput = False
+                invalidInput(validInput)
+                if turn == 0:
+                    turn = 0
+                elif turn > 0:
+                    turn -= 1
+                break
+        # If the first value in the 'coordinates' list is invalid the loop will run from the beginning.
+        if validInput == False:
+            if turn == 0:
+                turn = 0
+            elif turn > 0:
+                turn -= 1
+            time.sleep(1)     
+            continue
+
+        # This will look at the second value in the 'coordinates' list and will check if the input is valid.
+        for i in uppercaseGuessIndex.keys():
+            if coordinates[1] == i:
+                guess_col = uppercaseGuessIndex[i]
+            elif coordinates[1] not in uppercaseGuessIndex.keys():
+                validInput = False
+                invalidInput(validInput)
+                break
+        
+        # If the second value in the 'coordinates' list is invalid the loop will run from the beginning.
+        if validInput == False:
+            if turn == 0:
+                turn = 0
+            elif turn > 0:
+                turn -= 1 
+            time.sleep(1)     
+            continue
+
+        # This will loop through the keys in the 'rowCoordinates' dictionaty.
+        for i in rowCoordinates.keys():
+            # If the coordinates the user entered matches the coordiantes of a ship, then the loop will break.
+            if guess_row == rowCoordinates[i] and guess_col == colCoordinates[i]:
+                # If the number of ships is one, the loop will break.
+                if numberShips == 1:
+                    print "\n", "Congratulations! You sunk my battleship!"
+                    endGame = True
+                    break
+                # If the number of ships is greater than 2, this will run.
+                else:    
+                    for x in ifShipHasSunk.keys():
+                        # If the ship with the coordinates the user entered has not been sunken, this will run.
+                        if ifShipHasSunk[i] == False:
+                            print "\nYou sunk", counter5, "battleship(s)"
+                            board[guess_row][guess_col] = hit_ship
+                            print_board(board, ltrDisplay)
+                            numOfHits += 1
+                            counter5 += 1
+                            ifShipHasSunk[x] = True
+                            turnOver = True
+                            break 
+                        # If the user has already guessed the same coordinates this will print.
+                        else:
+                            print "\n", "You guessed that one already."
+                            print_board(board, ltrDisplay)
+                            break
+                if exitWhile == True:
+                    endGame = True
+                    break
+            elif turnOver == True:
+                del coordinates[:]
+                guess_coordinates = ''
+                break
+            # If the coordinates entered by the user are not any of the coordinates of the ships, this run.
+            elif guess_row not in rowCoordinates.values() or guess_col not in colCoordinates.values():
+                # If the the coordinates are larger or smaller than the board size this will print.
+                if guess_row < 0 or (guess_row + 1) > boardSize or guess_col < 0 or (guess_col + 1) > boardSize:
+                    print "\n", "Oops, that's not even in the ocean."
+                    print_board(board, ltrDisplay)
+                    break
+                # If the user has laready guessed that point, this will print.
+                elif (board[guess_row][guess_col] == redX):
+                    print "\n", "You guessed that one already."
+                    print_board(board, ltrDisplay)
+                    break
+                # If everything above is false, then this will print.
+                else:
+                    print "\n", "You missed my battleship!"
+                    board[guess_row][guess_col] = redX
+                    print_board(board, ltrDisplay)
+                    break
+            # If the coordinates entered by the user match the coordinates of some ships, but they are not of the same ship, this will run.
+            elif rowCoordinates.keys()[rowCoordinates.values().index(guess_row)] != colCoordinates.keys()[colCoordinates.values().index(guess_col)]:
+                ai_board[guess_row][guess_col] = redX
+                player_turn = False
+                print_board(board, ltrDisplay)
+                print "\n", "You missed my battleship!\n"
+                break  
+            if turn == turns:
+                endGame = True
+                break
+        if endGame == True:
+            break
+
+    # This sequence will ask the user if they want to play again, if so, the loop will re-run.
+    print "\n"    
+    playAgain = raw_input("Do you want to play again?(yes/no) ")
+    if playAgain == 'yes':
+        del board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        choice = ''
+        difficulty = ''
+        print "\n"
+        continue
+    elif playAgain == 'no':
+        print "\nGame Over"
+        break
+    else:
+        "\nGame Over"
+        break
+
+# If the user chooses the multiplayer game mode, this will run. Some of the code from this loop is identical to the code from the singleplayer mode, for that reason I will not be repeating the comments.
+while multiplayer == True:
+    
+    validInput = True
+
+    boardChoice = raw_input("Boards: \n\nBoard 1: 5x5 \nBoard 2: 10x10 \nBoard 3: 15x15 \n\nPick Board(1, 2, 3): ")
+    
+    for i in boards.keys():
+        if boardChoice == i:
+            count = 1
+            boardSize = boards[i]
+            for x in range(boards[i]):
+                player_board.append([cyanO] * boards[i])
+                ai_board.append([cyanO] * boards[i])
+                ltrDisplay.append(colored(ascii_uppercase[x], 'green'))
+                boardList.append(count)
+                count += 1
+        elif boardChoice not in boards.keys():
+            validInput = False
+            invalidInput(validInput)
+            break
+    
+    if validInput == False:
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        time.sleep(1)
+        replit.clear()
+        continue
+
+    difficulty = raw_input("\n\nDifficulty Levels: \n\nEasy: 12 Guesses\nMedium: 8 Guesses\nHard: 5 Guesses\nImpossible: 1 Guess\n\nPick Difficulty(Easy, Medium, Hard, Impossible): ")
+
+    for i in difficultyLevels.keys():
+        if difficulty == i:
+            turns = difficultyLevels[i]
+            break
+        elif difficulty not in difficultyLevels.keys():
+            validInput = False
+            invalidInput(validInput)    
+            break
+    
+    if validInput == False:
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        time.sleep(1)
+        replit.clear()
+        continue
+
+    shipChoice = int(raw_input("\n\nNumber of Ships:\n\n1 Ship\n3 Ships\n5 Ships\n\nChoose Number of Ships(1, 3, 5): "))
+    
+    for i in numOfShips:
+        if shipChoice == i:
+            numberShips = i
+            for x in range(1, numberShips + 1):
+                ifShipHasSunkPlayer[x] = False
+                ifShipHasSunkAi[x] = False
+        elif shipChoice not in numOfShips:
+            validInput = False
+            invalidInput(validInput)
+            break
+    
+    if validInput == False:
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        time.sleep(1)
+        replit.clear()    
+        continue
+
+    # This function will print a board for the user.
+    def print_player_board(player_board, ltrDisplay):
+        print "\nYour Board\n"
+        print "   ", "  ".join(ltrDisplay), "\n"
+        counter = 0
+        for row in player_board:
+            print colored(ascii_lowercase[counter], 'green'), " ", "  ".join(row), "\n"
+            counter += 1
+
+    # This function will print a board for the computer.
+    def print_ai_board(ai_board, ltrDisplay):
+        print "\nComputer Board\n"
+        print "   ", "  ".join(ltrDisplay), "\n"
+        counter = 0
+        for row in ai_board:
+            print colored(ascii_lowercase[counter], 'green'), " ", "  ".join(row), "\n"
+            counter += 1
+
+    print_player_board(player_board, ltrDisplay)
+
+    counter4 = 1
+    counter12 = 1
+    # This loop will run for 'numberShips' times.
+    while counter4 <= numberShips:
+        validShip = True
+        invalidRow = False
+        # This asks the user to enter coordinates for ships on their board.
+        print "Choose coordinates for ship " + str(counter4), "(Do not repeat coordinates)"
+        player_coordinates = raw_input("Choose x, X:")
+        # This will split the user's input and will change it to a list. 
+        player_coordinates_list = player_coordinates.split(", ")
+        for x in lowercaseGuessIndex.keys():
+            # If the value in the first index of the 'player_coordinates_list' matches a key in the 'lowercaseGuessIndex' dictionary, this will run.
+            if player_coordinates_list[0] == x:
+                # If the letter is smaller than the board size, this will run.
+                if lowercaseGuessIndex[x] < boardSize:
+                    # If the coordinate has not been already entered.
+                    if lowercaseGuessIndex[x] not in player_row_coordinates.values():
+                        player_row = lowercaseGuessIndex[x]
+                        player_row_coordinates[counter4] = player_row
+                        counter4 += 1
+                    else:
+                        validInput = False
+                        validShip = False
+                        invalidRow = True
+                        invalidInput(validInput)
+                        break
+                else:
+                    validInput = False
+                    validShip = False
+                    invalidRow = True
+                    invalidInput(validInput)
+                    break
+            elif player_coordinates_list[0] not in lowercaseGuessIndex.keys():
+                validInput = False
+                validShip = False
+                invalidRow = True
+                invalidInput(validInput)
+                break
+        if invalidRow == True:
+            continue
+        # The same process will run for the value at index 1 in the 'player_col_coordinates' list.
+        for k in uppercaseGuessIndex.keys():
+            if player_coordinates_list[1] == k:
+                if uppercaseGuessIndex[k] < boardSize:
+                    if player_coordinates_list[1] not in player_col_coordinates.values():
+                        player_col = uppercaseGuessIndex[k]
+                        player_col_coordinates[counter12] = player_col
+                        counter12 += 1
+                    else:
+                        validShip = False
+                        validInput = False
+                        invalidCol = True
+                        invalidInput(validInput)
+                        break
+            elif player_coordinates_list[1] not in uppercaseGuessIndex.keys():
+                validInput = False
+                validShip = False
+                invalidCol = True
+                invalidInput(validInput)
+                break
+        # If the ship is valid, the certain paint on the board will be changed to a differnt colour.
+        if validShip == True:
+            player_board[player_row][player_col] = player_ship
+        else:
+            if invalidCol == True:
+                del player_row_coordinates[counter4]
+                counter4 -= 1
+            continue
+
+    print_player_board(player_board, ltrDisplay)
+
+    print_ai_board(ai_board, ltrDisplay)
+
+    # This is the same sequence as the one seen in the singleplayer game mode.
+    for i in numOfShips:
+        if i == numberShips: 
+            counter1 = 1
+            x = 0
+            while(x < numberShips):
+                r = randint(0, boardSize - 1)
+                k = randint(0, boardSize - 1)
+                if r not in rowCoordinates.values():
+                    rowCoordinates[counter1] = r
+                    counter1 += 1
+                    x += 1
+
+    for i in numOfShips:
+        if i == numberShips: 
+            counter2 = 1
+            x = 0
+            while (x < numberShips):
+                r = randint(0, boardSize - 1)
+                k = randint(0, boardSize - 1)
+                if r not in colCoordinates.values():
+                    colCoordinates[counter2] = r
+                    counter2 += 1
+                    x += 1
+    
+    # This is the same sequence as the one seen in the singleplayer game mode.
+    for i in lowercaseIndex.keys():
+        for x in rowCoordinates.keys():
+            if rowCoordinates[x] == i:
+                print "\n", x,':', lowercaseIndex[i]
+    
+    for i in uppercaseIndex.keys():     
+        for x in colCoordinates.keys():
+            if colCoordinates[x] == i:
+                print '\n',x,':', uppercaseIndex[i]
+
+    endGame = False
+    exitWhile = False
+    player_win = False
+    ai_win = False
+
+    counter5 = 1
+    counter6 = 1
+    counter8 = 1
+    counter9 = 1
+    counter10 = 1
+    counter11 = 1
+
+    for turn in range(turns):
+        turnOver = False                
+        validInput = True
+        player_turn = True
+        allShipsSunkPlayer = False
+        allShipsSunkAi = False
+        
+        # If it is the players turn then this will run.
+        if player_turn == True:
+            
+            if all(value == True for value in ifShipHasSunkPlayer.values()):
+                print "\nCongratulations, you have sunken all my ships!\n"
+                exitWhile = True
+                player_turn = False
+                player_win = True
+                break         
+            
+            print "\n", "Turn", turn + 1, "\n"
+            guess_coordinates = raw_input("Guess Coordinates (x, X): ")
+            coordinates = guess_coordinates.split(", ")
+
+            for i in lowercaseGuessIndex.keys():
+                if coordinates[0] == i:
+                    guess_row = lowercaseGuessIndex[i]
+                elif coordinates[0] not in lowercaseGuessIndex.keys():
+                    validInput = False
+                    invalidInput(validInput)
+                    break
+        
+            if validInput == False:
+                if turn == 0:
+                    turn = 0
+                elif turn > 0:
+                    turn -= 1
+                time.sleep(1)
+                continue
+
+            for i in uppercaseGuessIndex.keys():
+                if coordinates[1] == i:
+                    guess_col = uppercaseGuessIndex[i]
+                elif coordinates[1] not in uppercaseGuessIndex.keys():
+                    validInput = False
+                    invalidInput(validInput)
+                    break
+        
+            if validInput == False:
+                if turn == 0:
+                    turn = 0
+                elif turn > 0:
+                    turn -= 1
+                time.sleep(1)
+                continue
+
+            for i in rowCoordinates.keys():
+                # This is the same sequence seen in the singleplayer game mode.
+                if guess_row == rowCoordinates[i] and guess_col == colCoordinates[i]:
+                    if numberShips == 1:
+                        ai_board[guess_row][guess_col] = hit_ship
+                        print_ai_board(ai_board, ltrDisplay)
+                        print "\n", "Congratulations! You sunk my battleship!\n"
+                        player_turn = False
+                        player_win = True
+                        allShipsSunkPlayer = True
+                        break
+                    else:    
+                        if ifShipHasSunkPlayer[i] == False:
+                            ai_board[guess_row][guess_col] = hit_ship
+                            print_ai_board(ai_board, ltrDisplay)
+                            print "\nYou sunk", counter5, "battleship(s)\n"
+                            numOfHits += 1
+                            counter5 += 1
+                            ifShipHasSunkPlayer[i] = True
+                            turnOver = True
+                            player_turn = False
+                            break
+                        elif ifShipHasSunkPlayer[i] == True:
+                            print_ai_board(ai_board, ltrDisplay)
+                            print "\n", "You guessed that one already.\n"
+                            turnOver = True
+                            player_turn = False
+                            break
+
+                elif guess_row not in rowCoordinates.values() or guess_col not in colCoordinates.values():
+                    if guess_row < 0 or (guess_row + 1) > boardSize or guess_col < 0 or (guess_col + 1) > boardSize:
+                        player_turn = False
+                        print_ai_board(ai_board, ltrDisplay)
+                        print "\n", "Oops, that's not even in the ocean.\n"
+                        break
+                    elif ai_board[guess_row][guess_col] == redX:
+                        print_ai_board(ai_board, ltrDisplay)
+                        player_turn = False
+                        print "\n", "You guessed that one already.\n"
+                        break
+                    else:
+                        ai_board[guess_row][guess_col] = redX
+                        player_turn = False
+                        print_ai_board(ai_board, ltrDisplay)
+                        print "\n", "You missed my battleship!\n"
+                        break
+                elif rowCoordinates.keys()[rowCoordinates.values().index(guess_row)] != colCoordinates.keys()[colCoordinates.values().index(guess_col)]:
+                    ai_board[guess_row][guess_col] = redX
+                    player_turn = False
+                    print_ai_board(ai_board, ltrDisplay)
+                    print "\n", "You missed my battleship!\n"
+                    break     
+                if turn == turns:
+                    endGame = True
+                    break
+        
+        # If it is not the players turn, it is the ai's turn, this will run.
+        if player_turn == False:
+            
+            # If the ai has sunken all the user's ships this will run.
+            if all(value == True for value in ifShipHasSunkAi.values()):
+                print "\nThe computer has sunken all your ships!\n"
+                exitWhile = True
+                player_turn = False
+                ai_win = True
+                allShipsSunkAi = True
+            
+            # This will choose a row value for the ai's guess.
+            x = randint(0, boardSize - 1)
+            if x not in ai_row.values():
+                ai_guess_row = x
+                ai_row[counter9] = ai_guess_row
+                counter9 += 1
+
+            # This will choose a column value for the ai's guess.
+            k = randint(0, boardSize - 1)
+            if k not in ai_col.values(): 
+                ai_guess_col = k
+                ai_col[counter11] = ai_guess_row
+                counter11 += 1
+
+            # This will loop through the keys in the 'player_row_coordinates" list.
+            for i in player_row_coordinates.keys():
+                # This following sequence is the same as above, with some variables changed.
+                if ai_guess_row == player_row_coordinates[i] and ai_guess_col == player_col_coordinates[i]:
+                    if numberShips == 1:
+                        player_board[ai_guess_row][ai_guess_col] = hit_ship
+                        print_player_board(player_board, ltrDisplay)
+                        print "\n The computer sunk your battleship!\n"
+                        endGame = True
+                        player_turn = True
+                        ai_win = True
+                        allShipsSunkAi = True
+                        break
+                    else:
+                        if ifShipHasSunkAi[i] == False:
+                            player_board[ai_guess_row][ai_guess_col] = hit_ship
+                            print_player_board(player_board, ltrDisplay)
+                            print "\nThe computer sank", counter8, "battleship(s)\n"
+                            numOfHits += 1
+                            counter8 += 1
+                            ifShipHasSunkAi[x] = True
+                            turnOver = True
+                            player_turn = True
+                            break
+                        else:
+                            print_player_board(player_board, ltrDisplay)
+                            print "\n", "The computer guessed the same point.\n"
+                            break 
+                    if turnOver == True:
+                        break
+                elif ai_guess_row not in player_row_coordinates.values() or ai_guess_col not in player_col_coordinates.values():
+                    if player_board[ai_guess_row][ai_guess_col] == redX:
+                        print_player_board(player_board, ltrDisplay)
+                        print "\n", "The computer guessed the same point.\n"
+                        player_turn = True
+                        break
+                    else:
+                        player_board[ai_guess_row][ai_guess_col] = redX
+                        player_turn = True
+                        print_player_board(player_board, ltrDisplay)
+                        print "\n", "The computer missed your battleship!\n"
+                        if player_win == True:
+                            break
+                        break
+                if turn == turns:
+                    endGame = True
+                    break
+                if endGame == True:
+                    break
+        if endGame == True:
+            break
+    
+    # These will look at the values of the following valriables, and will check if there was a winner or if there was a tie.
+    if player_win == True and ai_win == False:
+        print "\n\nCongratulations, you won!"
+    elif ai_win == True and player_win == False:
+        print "You have been defeated!"
+    else:
+        print "You have tied!"
+
+    # This is the same sequence seen in the singleplayer game mode.
+    print "\n"    
+    playAgain = raw_input("Do you want to play again?(yes/no) ")
+    if playAgain == 'yes':
+        del board[:]
+        del player_board[:]
+        del ai_board[:]
+        del ltrDisplay[:]
+        del boardList[:]
+        print "\n"
+        time.sleep(1)
+        replit.clear()
+        continue
+    elif playAgain == 'no':
+        print "\nGame Over"
+        break
+    else:
+        "\nGame Over"
+        break
